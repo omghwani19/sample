@@ -1,0 +1,9 @@
+# bkit-codex
+.agents/
+.codex/
+.bkit-codex/
+node_modules/
+.env
+*.log
+reports/*.html
+reports/*.json

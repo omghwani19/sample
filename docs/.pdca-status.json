@@ -1,0 +1,160 @@
+{
+  "version": "2.0",
+  "lastUpdated": "2026-05-24T15:12:58.581Z",
+  "activeFeatures": [
+    "gat-article-search-report"
+  ],
+  "primaryFeature": "gat-article-search-report",
+  "features": {
+    "gat-article-search-report": {
+      "phase": "completed",
+      "matchRate": null,
+      "iterationCount": 3,
+      "documents": {},
+      "taskChain": [
+        {
+          "phase": "plan",
+          "status": "completed",
+          "createdAt": "2026-05-23T14:57:20.850Z",
+          "completedAt": "2026-05-23T14:58:12.194Z"
+        },
+        {
+          "phase": "design",
+          "status": "completed",
+          "createdAt": "2026-05-23T14:57:20.850Z",
+          "completedAt": "2026-05-23T15:01:56.454Z"
+        },
+        {
+          "phase": "do",
+          "status": "active",
+          "createdAt": "2026-05-23T14:57:20.850Z"
+        },
+        {
+          "phase": "check",
+          "status": "pending",
+          "createdAt": "2026-05-23T14:57:20.850Z"
+        },
+        {
+          "phase": "report",
+          "status": "pending",
+          "createdAt": "2026-05-23T14:57:20.850Z"
+        }
+      ],
+      "timestamps": {
+        "started": "2026-05-23T14:57:20.851Z",
+        "lastUpdated": "2026-05-24T15:12:58.581Z"
+      },
+      "completedAt": "2026-05-24T15:12:58.579Z"
+    }
+  },
+  "pipeline": {
+    "currentPhase": 1,
+    "level": "Starter",
+    "phaseHistory": []
+  },
+  "session": {
+    "startedAt": "2026-05-23T14:57:20.838Z",
+    "onboardingCompleted": false,
+    "lastActivity": "2026-05-24T15:12:58.581Z"
+  },
+  "history": [
+    {
+      "feature": "gat-article-search-report",
+      "from": "plan",
+      "to": "design",
+      "timestamp": "2026-05-23T14:58:12.192Z"
+    },
+    {
+      "feature": "gat-article-search-report",
+      "action": "phase_complete",
+      "phase": "plan",
+      "nextPhase": "design",
+      "timestamp": "2026-05-23T14:58:12.193Z"
+    },
+    {
+      "feature": "gat-article-search-report",
+      "from": "design",
+      "to": "design",
+      "timestamp": "2026-05-23T15:00:40.870Z"
+    },
+    {
+      "feature": "gat-article-search-report",
+      "from": "design",
+      "to": "do",
+      "timestamp": "2026-05-23T15:01:56.452Z"
+    },
+    {
+      "feature": "gat-article-search-report",
+      "action": "phase_complete",
+      "phase": "design",
+      "nextPhase": "do",
+      "timestamp": "2026-05-23T15:01:56.453Z"
+    },
+    {
+      "feature": "gat-article-search-report",
+      "from": "check",
+      "to": "act",
+      "timestamp": "2026-05-23T15:19:13.937Z"
+    },
+    {
+      "feature": "gat-article-search-report",
+      "action": "phase_complete",
+      "phase": "check",
+      "nextPhase": "act",
+      "timestamp": "2026-05-23T15:19:13.938Z"
+    },
+    {
+      "feature": "gat-article-search-report",
+      "from": "check",
+      "to": "report",
+      "timestamp": "2026-05-24T14:55:55.103Z"
+    },
+    {
+      "feature": "gat-article-search-report",
+      "action": "phase_complete",
+      "phase": "act",
+      "nextPhase": "report",
+      "timestamp": "2026-05-24T14:55:55.104Z"
+    },
+    {
+      "feature": "gat-article-search-report",
+      "action": "phase_complete",
+      "phase": "report",
+      "nextPhase": "completed",
+      "timestamp": "2026-05-24T14:56:44.613Z"
+    },
+    {
+      "feature": "gat-article-search-report",
+      "from": "check",
+      "to": "act",
+      "timestamp": "2026-05-24T15:12:31.099Z"
+    },
+    {
+      "feature": "gat-article-search-report",
+      "action": "phase_complete",
+      "phase": "check",
+      "nextPhase": "act",
+      "timestamp": "2026-05-24T15:12:31.100Z"
+    },
+    {
+      "feature": "gat-article-search-report",
+      "from": "act",
+      "to": "report",
+      "timestamp": "2026-05-24T15:12:52.842Z"
+    },
+    {
+      "feature": "gat-article-search-report",
+      "action": "phase_complete",
+      "phase": "act",
+      "nextPhase": "report",
+      "timestamp": "2026-05-24T15:12:52.843Z"
+    },
+    {
+      "feature": "gat-article-search-report",
+      "action": "phase_complete",
+      "phase": "report",
+      "nextPhase": "completed",
+      "timestamp": "2026-05-24T15:12:58.580Z"
+    }
+  ]
+}
