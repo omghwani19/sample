@@ -15,7 +15,7 @@
 
 사용자는 특정 날짜에 배포된 GAT 기준 기사 후보를 찾고 싶다. 검색 대상은 아무 기사가 아니라 `GAT_SEARCH_GUIDE_v2026.txt`에 정의된 항공 산업 매체, 주제, 제외 조건을 만족하는 기사여야 한다.
 
-초기 버전은 이메일 전송보다 HTML 리포트 검토를 우선한다. 사용자는 달력 UI에서 한국시간 기준 날짜를 선택한다. 프로그램은 GUIDE의 고정 매체/주제 조건을 Google News RSS 검색어로 자동 생성해 기사 후보를 검색하고, 결과를 브라우저에서 바로 열 수 있는 HTML 파일로 생성한다.
+초기 버전은 이메일 전송보다 HTML 리포트 검토를 우선한다. 사용자는 달력 UI에서 한국시간 기준 날짜를 선택한다. 프로그램은 GUIDE의 고정 매체/주제 조건을 Google Custom Search JSON API 검색어로 자동 생성해 기사 후보를 검색하고, 결과를 브라우저에서 바로 열 수 있는 HTML 파일로 생성한다.
 
 ## 2. User Intent
 
@@ -65,21 +65,21 @@ Effort: Medium
 
 Selected: No
 
-Superseded: Google API 키 없이 무료로 사용하기 위해 Google News RSS 방식으로 전환했다.
+Superseded: 검색 정확도 개선을 위해 Google API 키 기반 Google Custom Search JSON API 방식으로 전환했다.
 
-### 3.4 Google News RSS + Local HTML Report
+### 3.4 Google Custom Search JSON API + Local HTML Report
 
-Google News RSS 검색을 이용해 GUIDE 주제 조건에 맞는 글로벌 뉴스 후보를 무료로 검색하고 HTML 리포트를 생성하는 방식이다.
+Google Custom Search JSON API를 이용해 GUIDE 주제 조건에 맞는 글로벌 뉴스 후보를 검색하고 HTML 리포트를 생성하는 방식이다.
 
 Pros:
-- Google API 키와 검색 엔진 ID가 필요 없다.
-- 무료로 시작할 수 있다.
+- Google API 키와 검색 엔진 ID로 공식 API 검색을 사용할 수 있다.
+- 검색 실패, 권한, 설정 오류를 구조화된 API 응답으로 확인할 수 있다.
 - `after:` / `before:` 날짜 조건을 검색어에 포함할 수 있다.
-- 기사 제목, 클릭 가능한 링크, 매체명, RSS 게시일 정보를 받을 수 있다.
+- 기사 제목, 클릭 가능한 링크, 매체명, 검색 결과 게시일 정보를 받을 수 있다.
 
 Cons:
 - Google 검색과 결과 범위가 다를 수 있다.
-- 일부 항공 전문 매체가 Google News RSS에 충분히 노출되지 않을 수 있다.
+- 일부 항공 전문 매체가 Google 검색 결과에 충분히 노출되지 않을 수 있다.
 - 결과 품질은 실제 검색 후 쿼리 그룹 튜닝이 필요하다.
 
 Effort: Medium
@@ -108,7 +108,7 @@ Effort: Medium-High
 - 달력 UI로 검색 날짜 선택
 - GUIDE 전체 주제 조건 자동 검색
 - `GAT_SEARCH_GUIDE_v2026.txt` 기준 반영
-- Google News RSS를 이용한 기사 후보 검색
+- Google Custom Search JSON API를 이용한 기사 후보 검색
 - 기사 URL 중복 제거
 - 결과 HTML 파일 생성
 - HTML에서 기사 링크 클릭 가능
@@ -139,7 +139,7 @@ Effort: Medium-High
 - 한국시간 기준 날짜 선택
 - 달력 UI 기반 날짜 입력
 - GUIDE 전체 주제 조건 고정 적용
-- Google News RSS 기반 기사 후보 검색
+- Google Custom Search JSON API 기반 기사 후보 검색
 - `GAT_SEARCH_GUIDE_v2026.txt` 기반 매체 Tier, 산업 주제, 제외 조건 반영
 - 검색 결과 중복 URL 제거
 - GAT 관련성 또는 선정 사유 표시
@@ -163,7 +163,7 @@ Effort: Medium-High
 - 사용자는 달력 UI에서 검색 날짜를 선택할 수 있어야 한다.
 - 사용자는 별도 키워드를 입력하지 않고 GUIDE 전체 기준으로 검색할 수 있어야 한다.
 - 프로그램은 `GAT_SEARCH_GUIDE_v2026.txt`의 매체 Tier, 산업 주제, 제외 조건을 검색 기준으로 사용해야 한다.
-- 프로그램은 Google News RSS를 이용해 기사 후보를 검색해야 한다.
+- 프로그램은 Google Custom Search JSON API를 이용해 기사 후보를 검색해야 한다.
 - 프로그램은 선택 날짜 기준으로 검색 결과를 제한하거나 우선 필터링해야 한다.
 - 프로그램은 중복 URL을 제거해야 한다.
 - 프로그램은 GAT 주제와 관련 있는 기사 후보를 우선 표시해야 한다.
@@ -199,7 +199,7 @@ Effort: Medium-High
 - 로컬 PC에서 실행되는 작은 웹 앱 또는 로컬 GUI 앱으로 구성한다.
 - 초기 구현은 간단한 로컬 웹 앱 형태가 적합하다.
 - 프론트엔드는 날짜 선택 달력, GUIDE 기준 요약, 검색 실행 버튼, 최근 생성 HTML 열기 기능을 제공한다.
-- 백엔드 또는 로컬 실행 스크립트는 Google News RSS 검색을 호출한다.
+- 백엔드 또는 로컬 실행 스크립트는 Google Custom Search JSON API를 호출한다.
 - 검색 기준은 코드에 고정하지 않고 `GAT_SEARCH_GUIDE_v2026.txt` 또는 별도 설정 파일에서 관리한다.
 - 검색 결과는 중복 제거, 매체 Tier 판정, GAT 주제 판정, 제외 조건 판정을 거쳐 정렬된다.
 - 최종 결과는 `reports/` 폴더에 HTML 파일로 저장한다.
@@ -210,12 +210,12 @@ Effort: Medium-High
 
 | Risk | Impact | Probability | Mitigation |
 |------|--------|-------------|------------|
-| Google News RSS 검색 결과 범위 제한 | Medium | Medium | GUIDE 주제 그룹을 조정하고 필요 시 매체별 RSS 보강을 검토한다. |
+| Google API 검색 결과 범위 제한 | Medium | Medium | GUIDE 주제 그룹을 조정하고 필요 시 매체별 검색 보강을 검토한다. |
 | 선택 날짜와 실제 기사 게시일 불일치 | High | Medium | 검색 쿼리에 날짜 조건을 포함하고 HTML에 날짜 신뢰도 또는 검색상 날짜 정보를 표시한다. |
-| 일부 매체의 Google News RSS 노출 제한 | Medium | Medium | 결과를 보고 항공 전문 매체 RSS 보강을 검토한다. |
+| 일부 매체의 Google 검색 노출 제한 | Medium | Medium | 결과를 보고 항공 전문 매체 보강을 검토한다. |
 | 광고성 또는 PR 기사 자동 제외의 한계 | Medium | High | 제외 키워드와 낮은 우선순위 표시를 적용하고 최종 판단은 사용자가 HTML에서 검토한다. |
 | 외부 검색 서비스 응답 실패 | Medium | Medium | 검색 실패 메시지를 표시하고 생성된 쿼리를 HTML/화면에서 확인 가능하게 한다. |
-| Google News RSS 검색 결과 품질 변동 | Medium | Medium | 결과 HTML에 검색 시각과 사용 쿼리를 기록한다. |
+| Google API 검색 결과 품질 변동 | Medium | Medium | 결과 HTML에 검색 시각과 사용 쿼리를 기록한다. |
 
 ## 10. Schedule
 
@@ -230,5 +230,5 @@ Effort: Medium-High
 ## 11. References
 
 - `GAT_SEARCH_GUIDE_v2026.txt`
-- Google News RSS
+- Google Custom Search JSON API
 - User-approved Plan Plus discussion from 2026-05-23

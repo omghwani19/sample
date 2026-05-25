@@ -9,7 +9,7 @@
 
 ## 1. Summary
 
-`gat-article-search-report` MVP has been implemented as a local Node web app. The app provides a Korean UI for choosing a Korean local date, previewing fixed GUIDE-based Google News RSS queries, and generating HTML reports from search results.
+`gat-article-search-report` MVP has been implemented as a local Node web app. The app provides a Korean UI for choosing a Korean local date, previewing fixed GUIDE-based Google Custom Search JSON API queries, and generating HTML reports from search results.
 
 The UI, runtime status messages, server errors, candidate labels, and generated HTML report language have been localized to Korean. Source code identifiers remain English for maintainability.
 
@@ -24,7 +24,7 @@ The UI, runtime status messages, server errors, candidate labels, and generated 
 - No Google API configuration required
 - GAT guide detection from the user's Downloads path
 - Built-in normalized GAT source/topic/exclusion rules
-- Google News RSS search service
+- Google Custom Search JSON API search service
 - Korean-date RSS publish-date verification
 - Best-effort publisher URL resolution from Google News links
 - Server-side date validation and final smoke QA command
@@ -49,11 +49,11 @@ The UI, runtime status messages, server errors, candidate labels, and generated 
 
 ## 4. Known Limits
 
-- Real Google News RSS result quality should be reviewed with editorial expectations.
-- Google News RSS may ignore historical date operators; the app filters mismatched RSS publish dates out instead of showing wrong-date articles.
+- Real Google API result quality should be reviewed with editorial expectations.
+- Google result date metadata may be incomplete; the app filters mismatched search result dates out instead of showing wrong-date articles by default.
 - Google News URL decoding depends on Google's current page structure; unresolved items fall back to the working Google News link.
 - Browser-plugin visual verification failed due a local browser runtime sandbox issue, so verification used HTTP smoke checks.
-- Generated queries and source/topic rules should be tuned after observing real Google News RSS results.
+- Generated queries and source/topic rules should be tuned after observing real Google API results.
 
 ## 5. How To Run
 
@@ -71,4 +71,4 @@ http://localhost:4173
 
 ## 6. Next Step
 
-Restart the local server and run a real GUIDE-wide Google News RSS search against the selected date.
+Restart the local server after adding `GOOGLE_API_KEY` and `GOOGLE_CSE_ID`, then run a real GUIDE-wide Google API search against the selected date.

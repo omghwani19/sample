@@ -97,9 +97,10 @@ function renderStatus(status) {
   state.status = status;
 
   if (status.apiConfigured) {
-    setBadge(elements.apiStatus, `${status.searchProvider || "무료 검색"} 준비됨`, "ready");
+    setBadge(elements.apiStatus, `${status.searchProvider || "검색 엔진"} 준비됨`, "ready");
   } else {
-    setBadge(elements.apiStatus, "검색 설정 필요", "warning");
+    const missing = status.missingConfig?.length ? `: ${status.missingConfig.join(", ")}` : "";
+    setBadge(elements.apiStatus, `Google API 설정 필요${missing}`, "warning");
   }
 
   if (status.guideLoaded) {
@@ -164,7 +165,7 @@ function renderSearchSummary(response) {
   const summary = response.summary || {};
 
   if (response.results.length === 0 && summary.rawCount > 0) {
-    messages.push(`RSS 원본 후보 ${summary.rawCount}건 중 ${summary.dateMismatchCount || 0}건은 선택 날짜와 달라 제외했습니다.`);
+    messages.push(`원본 후보 ${summary.rawCount}건 중 ${summary.dateMismatchCount || 0}건은 선택 날짜와 달라 제외했습니다.`);
   }
 
   if (summary.includedDateMismatchCount > 0) {

@@ -6,7 +6,7 @@ const path = require("node:path");
 const { loadRuntimeConfig, getStatusPayload } = require("./src/config");
 const { loadGuideConfig } = require("./src/guide-config");
 const { buildSearchQueries, normalizeSearchInput } = require("./src/search-query-builder");
-const { searchGoogleNewsRss } = require("./src/google-news-rss");
+const { searchGoogleCse } = require("./src/google-cse");
 const { rankCandidates } = require("./src/article-filter");
 const { resolveArticleUrls } = require("./src/article-url-resolver");
 const { findLatestReport, writeHtmlReport } = require("./src/report-writer");
@@ -163,6 +163,17 @@ async function handleSearch(request, response) {
     return;
   }
 
+  if (!runtimeConfig.googleApiKey || !runtimeConfig.googleCseId) {
+    sendJson(response, 400, {
+      error: "Google API 설정이 필요합니다. .env에 GOOGLE_API_KEY와 GOOGLE_CSE_ID를 입력하세요.",
+      missingConfig: [
+        ...(!runtimeConfig.googleApiKey ? ["GOOGLE_API_KEY"] : []),
+        ...(!runtimeConfig.googleCseId ? ["GOOGLE_CSE_ID"] : [])
+      ]
+    });
+    return;
+  }
+
   const queries = buildSearchQueries(input, guide);
   if (queries.length === 0) {
     sendJson(response, 400, {
@@ -174,7 +185,8 @@ async function handleSearch(request, response) {
   const rawResults = [];
   for (const query of queries) {
     try {
-      const items = await searchGoogleNewsRss({
+      const items = await searchGoogleCse({
+        runtimeConfig,
         query,
         date: input.date,
         maxResults: input.maxResultsPerQuery
@@ -202,12 +214,12 @@ async function handleSearch(request, response) {
     if (rawResults.length === 0) {
       warnings.push({
         query: "all",
-        message: "Google News RSS에서 검색 후보를 찾지 못했습니다. 날짜나 결과 수를 조정해 다시 확인해보세요."
+        message: "Google API에서 검색 후보를 찾지 못했습니다. 날짜나 결과 수를 조정해 다시 확인해보세요."
       });
     } else if (ranked.summary.dateMismatchCount > 0) {
       warnings.push({
         query: "date-filter",
-        message: `${ranked.summary.dateMismatchCount}건은 RSS 게시일이 선택 날짜와 달라 제외했습니다.`
+        message: `${ranked.summary.dateMismatchCount}건은 검색 결과의 게시일 정보가 선택 날짜와 달라 제외했습니다.`
       });
     }
   }

@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-`gat-article-search-report`는 개인 PC에서 실행하는 로컬 기사 검색 리포트 도구다. 사용자는 달력 UI로 한국시간 기준 검색 날짜를 선택한다. 앱은 GUIDE의 고정 매체/주제 조건으로 Google News RSS를 호출해 GAT 기준에 맞는 해외 항공 산업 기사 후보를 검색하고, 클릭 가능한 기사 URL이 포함된 HTML 리포트를 생성한다.
+`gat-article-search-report`는 개인 PC에서 실행하는 로컬 기사 검색 리포트 도구다. 사용자는 달력 UI로 한국시간 기준 검색 날짜를 선택한다. 앱은 GUIDE의 고정 매체/주제 조건으로 Google Custom Search JSON API를 호출해 GAT 기준에 맞는 해외 항공 산업 기사 후보를 검색하고, 클릭 가능한 기사 URL이 포함된 HTML 리포트를 생성한다.
 
 초기 버전은 업무용 도구 성격이 강하므로 랜딩 페이지가 아니라 바로 사용할 수 있는 검색 화면을 첫 화면으로 제공한다. `design.md`의 Zapier 스타일 토큰은 따뜻한 크림 배경, 커피색 텍스트, 오렌지 CTA, 12px 반경을 중심으로 차용하되, 기사 검토 화면은 조밀하고 읽기 쉬운 작업 UI로 설계한다.
 
@@ -18,7 +18,7 @@
 - **Review ready**: 검색 결과는 HTML 리포트와 동일한 정보 구조로 화면에서도 검토 가능해야 한다.
 - **URL trust**: 모든 기사 항목은 클릭 가능한 원문 URL을 가장 중요한 정보로 다룬다.
 - **Explainable filtering**: 왜 GAT 후보인지, 어떤 Tier와 주제에 걸렸는지 표시한다.
-- **Config aware**: 무료 검색 엔진 상태와 가이드 파일 상태를 사용자가 이해할 수 있게 보여준다.
+- **Config aware**: Google API 설정 상태와 가이드 파일 상태를 사용자가 이해할 수 있게 보여준다.
 - **Warm but utilitarian**: `design.md`의 따뜻한 색감은 유지하되, 장식보다 검색과 검토 효율을 우선한다.
 
 ## 3. Page Structure
@@ -29,7 +29,7 @@ Single-page local web app으로 구성한다.
 
 1. **Top Bar**
    - App name: `GAT Article Search`
-   - Small status area: 무료 검색 준비 상태, guide file loaded 여부
+   - Small status area: Google API 준비 상태, guide file loaded 여부
    - 최근 생성 리포트 열기 버튼
 
 2. **Search Control Band**
@@ -196,7 +196,7 @@ Displays current runtime progress.
 States:
 - idle
 - preparing queries
-- searching Google News RSS
+- searching Google API
 - filtering candidates
 - writing HTML report
 - complete
@@ -234,7 +234,7 @@ Actions:
 Readable error display.
 
 Examples:
-- Google News RSS request failed
+- Google API request failed
 - No matching articles
 - No matching articles
 - Guide file not found
@@ -293,12 +293,12 @@ Examples:
 1. Load environment config.
 2. Load and parse `GAT_SEARCH_GUIDE_v2026.txt` or the normalized guide config.
 3. User selects a date.
-4. Generate Google News RSS queries:
+4. Generate Google API queries:
    - GUIDE topic groups
    - date condition
    - aviation/GAT topic terms where useful
    - site/source constraints from Tier media list when possible
-5. Call Google News RSS.
+5. Call Google Custom Search JSON API.
 6. Normalize result URLs.
 7. Remove duplicate URLs.
 8. Infer source and Tier from URL/title/display link.
@@ -425,7 +425,7 @@ The article title and URL must both be clickable.
 3. Build `SearchForm` with date picker and fixed GUIDE criteria summary.
 4. Add `.env.example` and config validation.
 5. Implement guide config loader or normalized guide data.
-6. Implement Google News RSS service.
+6. Implement Google Custom Search JSON API service.
 7. Implement query builder.
 8. Implement result normalization, dedupe, scoring, and filtering.
 9. Build result list and progress/error states.

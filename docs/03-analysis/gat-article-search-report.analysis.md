@@ -8,7 +8,7 @@
 
 ## Summary
 
-The implementation matches the approved design closely. The app is now a local Node web app with a task-first Korean search screen, free Google News RSS search, GAT guide loading, GUIDE-based query preview, article candidate filtering, duplicate URL handling, and standalone Korean HTML report generation.
+The implementation matches the approved design closely. The app is now a local Node web app with a task-first Korean search screen, Google Custom Search JSON API search, GAT guide loading, GUIDE-based query preview, article candidate filtering, duplicate URL handling, and standalone Korean HTML report generation.
 
 The main intentional deviation is that the MVP uses plain HTML/CSS/JavaScript plus a dependency-free Node server instead of a React/TypeScript component structure. This keeps setup simpler while preserving the designed boundaries between UI, search, filtering, and reporting.
 
@@ -23,7 +23,7 @@ The main intentional deviation is that the MVP uses plain HTML/CSS/JavaScript pl
 - [x] No Google API key or CSE ID required
 - [x] GAT guide file detection from `GAT_GUIDE_PATH` or default Downloads path
 - [x] Built-in normalized GAT source, topic, and exclusion config
-- [x] Google News RSS search service
+- [x] Google Custom Search JSON API search service
 - [x] Query builder with source tiers, aviation terms, and selected date range
 - [x] URL normalization and duplicate removal
 - [x] RSS publish date verification against the selected Korean date
@@ -48,7 +48,7 @@ The main intentional deviation is that the MVP uses plain HTML/CSS/JavaScript pl
 ## Missing Items
 
 - [ ] Real result quality still needs review against target GAT editorial expectations.
-- [ ] Google News RSS can return date-mismatched items; the app now filters them out, but this can produce empty results for dates where RSS does not surface matching articles.
+- [ ] Google API results can still have incomplete date metadata; the app filters mismatched dates out, but this can produce empty results when Google does not surface exact-date metadata.
 - [ ] Browser-plugin visual verification failed due a local browser runtime sandbox error, so verification used HTTP smoke checks instead.
 
 ## Changed Items (Deviations from Design)
@@ -60,7 +60,7 @@ The main intentional deviation is that the MVP uses plain HTML/CSS/JavaScript pl
 
 ## Recommendations
 
-1. Inspect real GUIDE-wide searches across several dates to see whether Google News RSS coverage is sufficient.
+1. Inspect real GUIDE-wide searches across several dates to see whether Google API coverage is sufficient.
 2. Tune the GUIDE topic grouping if query count or result quality is not right.
 3. If older-date coverage is weak, add source-specific RSS feeds or another free date-aware provider as a fallback.
 
@@ -68,7 +68,7 @@ The main intentional deviation is that the MVP uses plain HTML/CSS/JavaScript pl
 
 - [x] Proceed with MVP usage without Google API setup.
 - [x] Run real search QA with RSS date filtering.
-- [x] Verify publisher URL resolution on real Google News RSS results.
+- [x] Switch default search provider to Google Custom Search JSON API.
 - [x] Add final smoke QA command: `npm run qa`.
 - [ ] Tune topic groups or add fallback feeds if needed.
 - [ ] Consider report phase if real search QA passes.

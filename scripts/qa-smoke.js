@@ -67,8 +67,7 @@ async function runQa() {
 
   try {
     const status = await waitForServer();
-    assert(status.apiConfigured === true, "검색 제공자가 준비되지 않았습니다.");
-    assert(status.searchProvider === "Google News RSS", "검색 제공자가 Google News RSS가 아닙니다.");
+    assert(status.searchProvider === "Google Custom Search JSON API", "검색 제공자가 Google API가 아닙니다.");
     assert(status.topicCount > 0, "GUIDE 주제 설정을 찾지 못했습니다.");
 
     const preview = await postJson(`${BASE_URL}/api/preview`, {
@@ -76,6 +75,19 @@ async function runQa() {
       maxResultsPerQuery: 20
     });
     assert(preview.queryCount === 3, "GUIDE 검색 쿼리 수가 예상과 다릅니다.");
+
+    if (!status.apiConfigured) {
+      const result = {
+        provider: status.searchProvider,
+        guideLoaded: status.guideLoaded,
+        queryCount: preview.queryCount,
+        apiConfigured: false,
+        missingConfig: status.missingConfig
+      };
+      await fs.writeFile(path.resolve(__dirname, "..", "reports", "qa-smoke-last.json"), JSON.stringify(result, null, 2), "utf8");
+      console.log(JSON.stringify(result, null, 2));
+      return;
+    }
 
     const search = await postJson(`${BASE_URL}/api/search`, {
       date: QA_DATE,
@@ -97,6 +109,7 @@ async function runQa() {
     const result = {
       provider: status.searchProvider,
       guideLoaded: status.guideLoaded,
+      apiConfigured: true,
       queryCount: preview.queryCount,
       resultCount: search.summary.resultCount,
       exactDateCount: search.summary.exactDateCount,

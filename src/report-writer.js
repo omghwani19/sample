@@ -207,8 +207,8 @@ function renderReportHtml({ input, queries, results, summary = {}, warnings, gen
       <div class="summary-card"><strong>${results.length}</strong><span>기사 후보</span></div>
       <div class="summary-card"><strong>${exactDateCount}</strong><span>선택 날짜 일치</span></div>
       <div class="summary-card"><strong>${includedDateMismatchCount}</strong><span>날짜 확인 필요</span></div>
-      <div class="summary-card"><strong>${rawCount}</strong><span>RSS 원본 후보</span></div>
-      <div class="summary-card"><strong>${dateMismatchCount}</strong><span>RSS 날짜 불일치</span></div>
+      <div class="summary-card"><strong>${rawCount}</strong><span>원본 후보</span></div>
+      <div class="summary-card"><strong>${dateMismatchCount}</strong><span>날짜 불일치</span></div>
       <div class="summary-card"><strong>${urlResolvedCount}</strong><span>원문 URL 확인</span></div>
       <div class="summary-card"><strong>${queries.length}</strong><span>사용 쿼리</span></div>
       <div class="summary-card"><strong>${warnings.length}</strong><span>경고</span></div>
@@ -231,7 +231,7 @@ function renderReportHtml({ input, queries, results, summary = {}, warnings, gen
 
     <section>
       <h2>검색 결과</h2>
-      ${results.length ? results.map(renderResult).join("") : `<p>이 검색 조건에 맞는 기사 후보가 없습니다. RSS 원본 후보 ${rawCount}건 중 날짜 불일치 ${dateMismatchCount}건이 제외되었습니다.</p>`}
+      ${results.length ? results.map(renderResult).join("") : `<p>이 검색 조건에 맞는 기사 후보가 없습니다. 원본 후보 ${rawCount}건 중 날짜 불일치 ${dateMismatchCount}건이 제외되었습니다.</p>`}
     </section>
 
     <section class="query-log">

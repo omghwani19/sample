@@ -55,18 +55,31 @@ function resolveGuidePath(rootDir, dotenv) {
 
 function loadRuntimeConfig(rootDir) {
   const dotenv = loadDotenv(rootDir);
+  const googleApiKey = pickValue(dotenv, "GOOGLE_API_KEY");
+  const googleCseId = pickValue(dotenv, "GOOGLE_CSE_ID");
 
   return {
     rootDir,
     guidePath: resolveGuidePath(rootDir, dotenv),
-    port: Number(pickValue(dotenv, "PORT") || process.env.PORT || 4173)
+    port: Number(pickValue(dotenv, "PORT") || process.env.PORT || 4173),
+    googleApiKey,
+    googleCseId
   };
 }
 
 function getStatusPayload(runtimeConfig, guide) {
+  const missingConfig = [];
+  if (!runtimeConfig.googleApiKey) {
+    missingConfig.push("GOOGLE_API_KEY");
+  }
+  if (!runtimeConfig.googleCseId) {
+    missingConfig.push("GOOGLE_CSE_ID");
+  }
+
   return {
-    apiConfigured: true,
-    searchProvider: "Google News RSS",
+    apiConfigured: missingConfig.length === 0,
+    searchProvider: "Google Custom Search JSON API",
+    missingConfig,
     guideLoaded: guide.loadedFromFile,
     guidePath: runtimeConfig.guidePath,
     guideSource: guide.loadedFromFile ? "file" : "built-in",
