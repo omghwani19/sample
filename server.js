@@ -7,8 +7,10 @@ const { loadRuntimeConfig, getStatusPayload } = require("./src/config");
 const { loadGuideConfig } = require("./src/guide-config");
 const { buildSearchQueries, normalizeSearchInput } = require("./src/search-query-builder");
 const { searchGoogleCse } = require("./src/google-cse");
+const { searchGoogleNewsRss } = require("./src/google-news-rss");
 const { rankCandidates } = require("./src/article-filter");
 const { resolveArticleUrls } = require("./src/article-url-resolver");
+const { enrichArticleMetadata } = require("./src/article-metadata-fetcher");
 const { findLatestReport, writeHtmlReport } = require("./src/report-writer");
 
 const ROOT_DIR = __dirname;
@@ -61,6 +63,48 @@ function isValidDateInput(value) {
   const [year, month, day] = value.split("-").map(Number);
   const date = new Date(Date.UTC(year, month - 1, day));
   return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+}
+
+function canonicalizeResultUrl(rawUrl) {
+  try {
+    const url = new URL(rawUrl);
+    url.hash = "";
+    return url.toString().replace(/\/$/, "");
+  } catch (error) {
+    return String(rawUrl || "").trim();
+  }
+}
+
+function dedupeSearchResults(results) {
+  const byUrl = new Map();
+
+  for (const result of results) {
+    const key = canonicalizeResultUrl(result.url);
+    if (!key || byUrl.has(key)) {
+      continue;
+    }
+
+    byUrl.set(key, result);
+  }
+
+  return [...byUrl.values()];
+}
+
+function selectSearchProvider(runtimeConfig) {
+  if (runtimeConfig.searchProvider === "google-cse") {
+    return {
+      name: "Google Custom Search JSON API",
+      search: (params) => searchGoogleCse({
+        runtimeConfig,
+        ...params
+      })
+    };
+  }
+
+  return {
+    name: "Google News RSS",
+    search: (params) => searchGoogleNewsRss(params)
+  };
 }
 
 async function readJsonBody(request) {
@@ -163,7 +207,8 @@ async function handleSearch(request, response) {
     return;
   }
 
-  if (!runtimeConfig.googleApiKey || !runtimeConfig.googleCseId) {
+  const searchProvider = selectSearchProvider(runtimeConfig);
+  if (runtimeConfig.searchProvider === "google-cse" && (!runtimeConfig.googleApiKey || !runtimeConfig.googleCseId)) {
     sendJson(response, 400, {
       error: "Google API 설정이 필요합니다. .env에 GOOGLE_API_KEY와 GOOGLE_CSE_ID를 입력하세요.",
       missingConfig: [
@@ -185,8 +230,7 @@ async function handleSearch(request, response) {
   const rawResults = [];
   for (const query of queries) {
     try {
-      const items = await searchGoogleCse({
-        runtimeConfig,
+      const items = await searchProvider.search({
         query,
         date: input.date,
         maxResults: input.maxResultsPerQuery
@@ -209,12 +253,17 @@ async function handleSearch(request, response) {
     }
   }
 
-  const ranked = rankCandidates(rawResults, guide, input);
+  const dedupedRawResults = dedupeSearchResults(rawResults);
+  const resolved = await resolveArticleUrls(dedupedRawResults);
+  const enriched = await enrichArticleMetadata(resolved.results, {
+    fetchLimit: input.maxArticleFetches
+  });
+  const ranked = rankCandidates(enriched.results, guide, input);
   if (ranked.results.length === 0) {
     if (rawResults.length === 0) {
       warnings.push({
         query: "all",
-        message: "Google API에서 검색 후보를 찾지 못했습니다. 날짜나 결과 수를 조정해 다시 확인해보세요."
+        message: `${searchProvider.name}에서 검색 후보를 찾지 못했습니다. 날짜나 결과 수를 조정해 다시 확인해보세요.`
       });
     } else if (ranked.summary.dateMismatchCount > 0) {
       warnings.push({
@@ -224,10 +273,12 @@ async function handleSearch(request, response) {
     }
   }
 
-  const resolved = await resolveArticleUrls(ranked.results);
   const summary = {
     ...ranked.summary,
-    ...resolved.summary
+    rawCount: rawResults.length,
+    dedupedRawCount: dedupedRawResults.length,
+    ...resolved.summary,
+    ...enriched.summary
   };
   const report = await writeHtmlReport({
     rootDir: ROOT_DIR,
@@ -235,14 +286,14 @@ async function handleSearch(request, response) {
     input,
     guide,
     queries,
-    results: resolved.results,
+    results: ranked.results,
     summary,
     warnings,
     generatedAt: new Date()
   });
 
   sendJson(response, 200, {
-    results: resolved.results,
+    results: ranked.results,
     summary,
     queries,
     warnings,

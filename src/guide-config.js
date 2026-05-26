@@ -170,16 +170,27 @@ const INCLUDED_TOPICS = [
 ];
 
 const EXCLUDED_TERMS = [
+  "sponsored content",
+  "advertorial",
+  "partner content",
+  "press release",
+  "simple corporate PR",
+  "advertising",
+  "travel guide",
   "travel tips",
+  "things to do",
+  "tourism",
+  "tourism promotion",
   "vacation",
   "holiday",
-  "tourism promotion",
+  "holiday deals",
   "tour package",
   "mileage sale",
   "seat sale",
   "customer service",
-  "sponsored content",
-  "advertorial",
+  "lounge review",
+  "flight review",
+  "simple tips",
   "coupon",
   "giveaway"
 ];

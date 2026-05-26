@@ -6,7 +6,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "check": "node --check server.js && node --check src/config.js && node --check src/guide-config.js && node --check src/search-query-builder.js && node --check src/google-cse.js && node --check src/google-news-rss.js && node --check src/article-filter.js && node --check src/article-url-resolver.js && node --check src/report-writer.js && node --check scripts/qa-smoke.js",
+    "check": "node --check server.js && node --check src/config.js && node --check src/guide-config.js && node --check src/search-query-builder.js && node --check src/google-cse.js && node --check src/google-news-rss.js && node --check src/article-filter.js && node --check src/article-url-resolver.js && node --check src/article-metadata-fetcher.js && node --check src/report-writer.js && node --check scripts/qa-smoke.js",
     "qa": "node scripts/qa-smoke.js"
   },
   "engines": {

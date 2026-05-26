@@ -38,14 +38,22 @@ function renderResult(result, index) {
         <span class="badge">${escapeHtml(result.priorityLabel)}</span>
         ${result.dateStatus ? `<span class="badge">${escapeHtml(result.dateStatus)}</span>` : ""}
         ${result.urlResolutionStatus ? `<span class="badge">${escapeHtml(result.urlResolutionStatus)}</span>` : ""}
+        ${result.articleDateVerificationStatus ? `<span class="badge">원문 날짜 ${escapeHtml(result.articleDateVerificationStatus)}</span>` : ""}
         <span class="date-info">${escapeHtml(result.dateInfo)}</span>
       </div>
       <h2><a href="${escapeHtml(result.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(index + 1)}. ${escapeHtml(result.title)}</a></h2>
       <p class="source-line">${escapeHtml(result.source)} · ${escapeHtml(result.selectionReason)}</p>
+      ${result.excludeReason ? `<p class="warning-text">${escapeHtml(result.excludeReason)}</p>` : ""}
       <p>${escapeHtml(result.snippet)}</p>
-      <div class="topic-row">${renderBadges(result.matchedTopics, "주제 검토 필요")}</div>
+      <div class="topic-row">
+        ${result.gatTopic ? `<span class="badge strong">${escapeHtml(result.gatTopic)}</span>` : ""}
+        ${Number.isFinite(Number(result.score)) ? `<span class="badge">Score ${escapeHtml(result.score)}</span>` : ""}
+        ${renderBadges(result.matchedTopics, "주제 검토 필요")}
+      </div>
       <a class="url-link" href="${escapeHtml(result.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(result.url)}</a>
       ${result.googleNewsUrl ? `<p><a href="${escapeHtml(result.googleNewsUrl)}" target="_blank" rel="noopener noreferrer">Google News 링크</a></p>` : ""}
+      ${result.articleDateVerificationSource ? `<p class="source-line">원문 날짜 출처: ${escapeHtml(result.articleDateVerificationSource)}</p>` : ""}
+      ${result.articleDateVerificationError ? `<p class="source-line">원문 날짜 확인 메모: ${escapeHtml(result.articleDateVerificationError)}</p>` : ""}
       <details>
         <summary>사용 쿼리</summary>
         <code>${escapeHtml(result.queryUsed)}</code>
@@ -67,6 +75,7 @@ function renderReportHtml({ input, queries, results, summary = {}, warnings, gen
   const includedDateMismatchCount = safeNumber(summary.includedDateMismatchCount);
   const exactDateCount = safeNumber(summary.exactDateCount);
   const urlResolvedCount = safeNumber(summary.urlResolvedCount);
+  const articleDateVerifiedCount = safeNumber(summary.articleDateVerifiedCount);
 
   return `<!doctype html>
 <html lang="ko">
@@ -140,6 +149,11 @@ function renderReportHtml({ input, queries, results, summary = {}, warnings, gen
       color: var(--body);
       font-size: 14px;
     }
+    .warning-text {
+      margin: 10px 0;
+      color: #8f2d00;
+      font-weight: 700;
+    }
     .result-card {
       border: 1px solid rgba(32, 21, 21, 0.16);
       border-radius: 12px;
@@ -210,6 +224,7 @@ function renderReportHtml({ input, queries, results, summary = {}, warnings, gen
       <div class="summary-card"><strong>${rawCount}</strong><span>원본 후보</span></div>
       <div class="summary-card"><strong>${dateMismatchCount}</strong><span>날짜 불일치</span></div>
       <div class="summary-card"><strong>${urlResolvedCount}</strong><span>원문 URL 확인</span></div>
+      <div class="summary-card"><strong>${articleDateVerifiedCount}</strong><span>원문 날짜 확인</span></div>
       <div class="summary-card"><strong>${queries.length}</strong><span>사용 쿼리</span></div>
       <div class="summary-card"><strong>${warnings.length}</strong><span>경고</span></div>
       <div class="summary-card"><strong>${Object.keys(tierCounts).length}</strong><span>포함된 등급</span></div>

@@ -39,12 +39,17 @@
           <div class="guide-summary field-wide" aria-label="고정 검색 기준">
             <span>검색 기준</span>
             <strong>GAT_SEARCH_GUIDE 전체 기준</strong>
-            <p>항공 정책, 항공사 전략, 공항 인프라, 항공기 기술, MRO, SAF/탄소 정책, UAM/eVTOL, 항공 보안, 항공 디지털 기술을 고정 조건으로 검색합니다.</p>
+            <p>항공 정책, 항공사 전략, 공항 인프라, 항공기 기술, MRO, SAF/탄소 정책, UAM/eVTOL, 항공 보안, 디지털 기술 조건으로 검색합니다.</p>
           </div>
 
           <label class="field">
             <span>쿼리당 결과 수</span>
             <input id="maxResultsInput" name="maxResultsPerQuery" type="number" min="1" max="250" value="75">
+          </label>
+
+          <label class="field">
+            <span>원문 날짜 확인 수</span>
+            <input id="maxArticleFetchesInput" name="maxArticleFetches" type="number" min="0" max="100" value="60">
           </label>
 
           <fieldset class="tier-field">
@@ -60,7 +65,7 @@
 
           <label class="review-option">
             <input id="includeDateMismatchesInput" name="includeDateMismatches" type="checkbox">
-            <span>선택 날짜와 다른 검색 후보도 참고용으로 표시</span>
+            <span>선택 날짜와 다른 후보도 참고용으로 표시</span>
           </label>
 
           <div class="form-actions">

@@ -57,11 +57,13 @@ function loadRuntimeConfig(rootDir) {
   const dotenv = loadDotenv(rootDir);
   const googleApiKey = pickValue(dotenv, "GOOGLE_API_KEY");
   const googleCseId = pickValue(dotenv, "GOOGLE_CSE_ID");
+  const searchProvider = pickValue(dotenv, "SEARCH_PROVIDER") || "google-news-rss";
 
   return {
     rootDir,
     guidePath: resolveGuidePath(rootDir, dotenv),
     port: Number(pickValue(dotenv, "PORT") || process.env.PORT || 4173),
+    searchProvider,
     googleApiKey,
     googleCseId
   };
@@ -69,16 +71,18 @@ function loadRuntimeConfig(rootDir) {
 
 function getStatusPayload(runtimeConfig, guide) {
   const missingConfig = [];
-  if (!runtimeConfig.googleApiKey) {
+  const usesGoogleCse = runtimeConfig.searchProvider === "google-cse";
+
+  if (usesGoogleCse && !runtimeConfig.googleApiKey) {
     missingConfig.push("GOOGLE_API_KEY");
   }
-  if (!runtimeConfig.googleCseId) {
+  if (usesGoogleCse && !runtimeConfig.googleCseId) {
     missingConfig.push("GOOGLE_CSE_ID");
   }
 
   return {
     apiConfigured: missingConfig.length === 0,
-    searchProvider: "Google Custom Search JSON API",
+    searchProvider: usesGoogleCse ? "Google Custom Search JSON API" : "Google News RSS",
     missingConfig,
     guideLoaded: guide.loadedFromFile,
     guidePath: runtimeConfig.guidePath,

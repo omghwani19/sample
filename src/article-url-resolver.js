@@ -184,14 +184,14 @@ async function resolveArticleUrls(results) {
         url: resolution.url,
         googleNewsUrl: isResolved ? result.url : "",
         urlResolutionMethod: resolution.method,
-        urlResolutionStatus: isResolved ? "원문 URL 확인됨" : "Google News 링크"
+        urlResolutionStatus: isResolved ? "원문 URL 확인" : "직접 URL"
       });
     } catch (error) {
       resolvedResults.push({
         ...result,
         googleNewsUrl: "",
         urlResolutionMethod: "failed",
-        urlResolutionStatus: "Google News 링크",
+        urlResolutionStatus: "URL 확인 실패",
         urlResolutionError: error.message
       });
     }

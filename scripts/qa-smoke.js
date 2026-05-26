@@ -1,6 +1,7 @@
 const { spawn } = require("node:child_process");
 const fs = require("node:fs/promises");
 const path = require("node:path");
+const { extractArticleDate, extractArticleText } = require("../src/article-metadata-fetcher");
 
 const PORT = "4191";
 const BASE_URL = `http://localhost:${PORT}`;
@@ -67,31 +68,36 @@ async function runQa() {
 
   try {
     const status = await waitForServer();
-    assert(status.searchProvider === "Google Custom Search JSON API", "검색 제공자가 Google API가 아닙니다.");
+    assert(status.searchProvider === "Google News RSS", "기본 검색 제공자가 Google News RSS가 아닙니다.");
     assert(status.topicCount > 0, "GUIDE 주제 설정을 찾지 못했습니다.");
+
+    const homeResponse = await fetch(BASE_URL);
+    assert(homeResponse.ok, "첫 화면 HTML을 가져오지 못했습니다.");
+    const homeHtml = await homeResponse.text();
+    assert(homeHtml.includes("GAT 기사 검색"), "첫 화면 제목이 올바르지 않습니다.");
+    assert(homeHtml.includes("원문 날짜 확인 수"), "원문 날짜 확인 옵션이 첫 화면에 없습니다.");
+
+    const sampleHtml = [
+      "<html><head>",
+      "<meta property=\"article:published_time\" content=\"2026-05-18T10:00:00Z\">",
+      "<meta name=\"description\" content=\"Aviation policy and airport infrastructure analysis.\">",
+      "</head><body><p>This aviation policy article discusses airport infrastructure investment and SAF compliance in detail.</p></body></html>"
+    ].join("");
+    const sampleDate = extractArticleDate(sampleHtml);
+    assert(sampleDate.dateInfo === "2026-05-18T10:00:00Z", "원문 게시일 추출이 실패했습니다.");
+    assert(extractArticleText(sampleHtml).includes("airport infrastructure"), "원문 본문 추출이 실패했습니다.");
 
     const preview = await postJson(`${BASE_URL}/api/preview`, {
       date: QA_DATE,
       maxResultsPerQuery: 20
     });
-    assert(preview.queryCount === 3, "GUIDE 검색 쿼리 수가 예상과 다릅니다.");
-
-    if (!status.apiConfigured) {
-      const result = {
-        provider: status.searchProvider,
-        guideLoaded: status.guideLoaded,
-        queryCount: preview.queryCount,
-        apiConfigured: false,
-        missingConfig: status.missingConfig
-      };
-      await fs.writeFile(path.resolve(__dirname, "..", "reports", "qa-smoke-last.json"), JSON.stringify(result, null, 2), "utf8");
-      console.log(JSON.stringify(result, null, 2));
-      return;
-    }
+    assert(preview.queryCount > 3, "GUIDE 검색 쿼리 수가 예상보다 적습니다.");
+    assert(preview.queries.every((query) => query.query.includes("site:")), "GUIDE 검색 쿼리가 매체별 site 검색 형식이 아닙니다.");
 
     const search = await postJson(`${BASE_URL}/api/search`, {
       date: QA_DATE,
-      maxResultsPerQuery: 20,
+      maxResultsPerQuery: 3,
+      maxArticleFetches: 3,
       includeDateMismatches: false
     });
     assert(search.reportUrl, "HTML 리포트 URL이 생성되지 않았습니다.");
@@ -117,6 +123,8 @@ async function runQa() {
       rawCount: search.summary.rawCount,
       dateMismatchCount: search.summary.dateMismatchCount,
       urlResolvedCount: search.summary.urlResolvedCount,
+      articleDateVerifiedCount: search.summary.articleDateVerifiedCount,
+      articleDateFailedCount: search.summary.articleDateFailedCount,
       reportUrl: search.reportUrl
     };
 

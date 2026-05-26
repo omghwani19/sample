@@ -13,6 +13,7 @@ const elements = {
   searchForm: document.querySelector("#searchForm"),
   dateInput: document.querySelector("#dateInput"),
   maxResultsInput: document.querySelector("#maxResultsInput"),
+  maxArticleFetchesInput: document.querySelector("#maxArticleFetchesInput"),
   includeDateMismatchesInput: document.querySelector("#includeDateMismatchesInput"),
   previewButton: document.querySelector("#previewButton"),
   searchButton: document.querySelector("#searchButton"),
@@ -63,6 +64,7 @@ function getSearchPayload() {
     date: elements.dateInput.value,
     tierScope: selectedTiers(),
     maxResultsPerQuery: Number(elements.maxResultsInput.value || 5),
+    maxArticleFetches: Number(elements.maxArticleFetchesInput.value || 60),
     includeDateMismatches: elements.includeDateMismatchesInput.checked
   };
 }
@@ -100,7 +102,7 @@ function renderStatus(status) {
     setBadge(elements.apiStatus, `${status.searchProvider || "검색 엔진"} 준비됨`, "ready");
   } else {
     const missing = status.missingConfig?.length ? `: ${status.missingConfig.join(", ")}` : "";
-    setBadge(elements.apiStatus, `Google API 설정 필요${missing}`, "warning");
+    setBadge(elements.apiStatus, `검색 설정 필요${missing}`, "warning");
   }
 
   if (status.guideLoaded) {
@@ -199,17 +201,23 @@ function renderResults(results) {
         <span class="result-badge ${result.excludedTerms?.length ? "warning" : ""}">${escapeHtml(result.priorityLabel)}</span>
         ${result.dateStatus ? `<span class="result-badge ${result.dateMatched ? "ready" : "warning"}">${escapeHtml(result.dateStatus)}</span>` : ""}
         ${result.urlResolutionStatus ? `<span class="result-badge">${escapeHtml(result.urlResolutionStatus)}</span>` : ""}
+        ${result.articleDateVerificationStatus ? `<span class="result-badge ${result.articleDateVerificationStatus === "verified" ? "ready" : "warning"}">원문 날짜 ${escapeHtml(result.articleDateVerificationStatus)}</span>` : ""}
         <span class="result-badge">${escapeHtml(result.dateInfo)}</span>
       </div>
       <h3><a href="${escapeHtml(result.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(index + 1)}. ${escapeHtml(result.title)}</a></h3>
       <div class="result-source">${escapeHtml(result.source)} · ${escapeHtml(result.selectionReason)}</div>
+      ${result.excludeReason ? `<div class="message warning">${escapeHtml(result.excludeReason)}</div>` : ""}
       <p>${escapeHtml(result.snippet)}</p>
       <div class="result-meta">
+        ${result.gatTopic ? `<span class="result-badge ready">${escapeHtml(result.gatTopic)}</span>` : ""}
+        ${Number.isFinite(Number(result.score)) ? `<span class="result-badge">Score ${escapeHtml(result.score)}</span>` : ""}
         ${(result.matchedKeywords || []).map((item) => `<span class="result-badge">${escapeHtml(item)}</span>`).join("")}
         ${(result.matchedTopics || []).map((item) => `<span class="result-badge">${escapeHtml(item)}</span>`).join("")}
       </div>
       <div class="url-row"><a href="${escapeHtml(result.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(result.url)}</a></div>
       ${result.googleNewsUrl ? `<div class="url-row"><a href="${escapeHtml(result.googleNewsUrl)}" target="_blank" rel="noopener noreferrer">Google News 링크</a></div>` : ""}
+      ${result.articleDateVerificationSource ? `<div class="url-row">원문 날짜 출처: ${escapeHtml(result.articleDateVerificationSource)}</div>` : ""}
+      ${result.articleDateVerificationError ? `<div class="url-row">원문 날짜 확인 메모: ${escapeHtml(result.articleDateVerificationError)}</div>` : ""}
     </article>
   `).join("");
 }
@@ -296,6 +304,7 @@ function bindEvents() {
   elements.searchForm.addEventListener("submit", runSearch);
   elements.dateInput.addEventListener("change", debouncedPreview);
   elements.maxResultsInput.addEventListener("change", debouncedPreview);
+  elements.maxArticleFetchesInput.addEventListener("change", debouncedPreview);
   elements.includeDateMismatchesInput.addEventListener("change", debouncedPreview);
 
   for (const input of document.querySelectorAll("input[name='tierScope']")) {
