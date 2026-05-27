@@ -1,12 +1,8 @@
-const DEFAULT_MAX_RESULTS = 5;
+const DEFAULT_MAX_RESULTS = 10;
 const MAX_RSS_RESULTS = 250;
-const DEFAULT_QUERY_LIMIT = 120;
-const DEFAULT_ARTICLE_FETCH_LIMIT = 60;
-
-const DATE_VARIANT_LIMIT_FOR_TOPIC_SEARCH = 2;
-const GENERAL_DATE_VARIANT_LIMIT = 5;
-const INITIAL_GENERAL_DATE_VARIANT_LIMIT = 2;
-const TOPIC_KEYWORD_LIMIT_PER_SOURCE = 4;
+const DEFAULT_QUERY_LIMIT = 60;
+const DEFAULT_ARTICLE_FETCH_LIMIT = 24;
+const TOPIC_KEYWORD_LIMIT_PER_SOURCE = 3;
 
 const TOPIC_KEYWORDS = [
   "aviation policy",
@@ -32,6 +28,16 @@ function unique(values) {
   return [...new Set(values.filter(Boolean))];
 }
 
+function addDays(dateValue, days) {
+  const [year, month, day] = String(dateValue || "").split("-").map(Number);
+  if (!year || !month || !day) {
+    return dateValue;
+  }
+
+  const date = new Date(Date.UTC(year, month - 1, day + days));
+  return date.toISOString().slice(0, 10);
+}
+
 function parseKeywords(value) {
   if (Array.isArray(value)) {
     return unique(value.map((item) => String(item).trim()).filter(Boolean));
@@ -46,7 +52,8 @@ function parseKeywords(value) {
 }
 
 function normalizeSearchInput(body) {
-  const date = String(body.date || "").trim();
+  const startDate = String(body.startDate || body.date || "").trim();
+  const endDate = String(body.endDate || body.date || startDate).trim();
   const keywords = parseKeywords(body.keywords);
   const includeDateMismatches = body.includeDateMismatches === true;
   const tierScope = Array.isArray(body.tierScope) && body.tierScope.length > 0
@@ -57,12 +64,20 @@ function normalizeSearchInput(body) {
   const maxResultsPerQuery = Math.max(1, Math.min(MAX_RSS_RESULTS, Number.isFinite(requestedMax) ? requestedMax : DEFAULT_MAX_RESULTS));
   const requestedArticleFetches = Number(body.maxArticleFetches || DEFAULT_ARTICLE_FETCH_LIMIT);
   const maxArticleFetches = Math.max(0, Math.min(100, Number.isFinite(requestedArticleFetches) ? requestedArticleFetches : DEFAULT_ARTICLE_FETCH_LIMIT));
+  const normalizedStartDate = startDate && endDate && endDate < startDate ? endDate : startDate;
+  const normalizedEndDate = startDate && endDate && endDate < startDate ? startDate : endDate;
 
   return {
-    date,
+    date: normalizedStartDate,
+    startDate: normalizedStartDate,
+    endDate: normalizedEndDate || normalizedStartDate,
     keywords,
     searchMode: keywords.length > 0 ? "custom" : "guide",
-    searchLabel: keywords.length > 0 ? keywords.join(", ") : "GUIDE 전체 기준",
+    searchLabel: keywords.length > 0
+      ? keywords.join(", ")
+      : normalizedStartDate === normalizedEndDate
+        ? `GUIDE 전체 기준 · ${normalizedStartDate}`
+        : `GUIDE 전체 기준 · ${normalizedStartDate} ~ ${normalizedEndDate}`,
     includeDateMismatches,
     tierScope,
     maxResultsPerQuery,
@@ -80,45 +95,15 @@ function formatSearchTerm(term) {
   return cleanTerm.includes(" ") ? `"${cleanTerm}"` : cleanTerm;
 }
 
-function formatDateLong(targetDate) {
-  const date = new Date(`${targetDate}T00:00:00Z`);
-  if (Number.isNaN(date.getTime())) {
-    return targetDate;
+function buildDateClause(startDate, endDate) {
+  const normalizedStart = String(startDate || "").trim();
+  const normalizedEnd = String(endDate || normalizedStart).trim();
+  if (!normalizedStart) {
+    return "";
   }
 
-  return new Intl.DateTimeFormat("en-US", {
-    timeZone: "UTC",
-    month: "long",
-    day: "numeric",
-    year: "numeric"
-  }).format(date);
-}
-
-function formatDateDayMonth(targetDate) {
-  const date = new Date(`${targetDate}T00:00:00Z`);
-  if (Number.isNaN(date.getTime())) {
-    return targetDate;
-  }
-
-  return new Intl.DateTimeFormat("en-GB", {
-    timeZone: "UTC",
-    day: "numeric",
-    month: "long",
-    year: "numeric"
-  }).format(date);
-}
-
-function buildDateVariants(targetDate) {
-  const longDate = formatDateLong(targetDate);
-  const dayMonthDate = formatDateDayMonth(targetDate);
-
-  return unique([
-    `"${longDate}"`,
-    `"${dayMonthDate}"`,
-    `"${targetDate}"`,
-    `"published ${dayMonthDate}"`,
-    `"W/C ${longDate}"`
-  ]);
+  const end = normalizedEnd || normalizedStart;
+  return `after:${normalizedStart} before:${addDays(end, 1)}`;
 }
 
 function flattenTopicKeywords(guide) {
@@ -148,65 +133,40 @@ function pushQuery(queries, seen, query) {
 }
 
 function buildSearchQueries(input, guide) {
-  if (!input.date) {
+  if (!input.startDate) {
     return [];
   }
 
   const selectedSources = guide.allSources.filter((source) => input.tierScope.includes(source.tier));
   const queries = [];
   const seen = new Set();
-  const dateVariants = buildDateVariants(input.date);
+  const dateClause = buildDateClause(input.startDate, input.endDate);
   const keywords = input.searchMode === "custom" ? input.keywords : flattenTopicKeywords(guide);
   const queryLimit = input.maxQueries || DEFAULT_QUERY_LIMIT;
 
   for (const source of selectedSources) {
-    for (const dateVariant of dateVariants.slice(0, INITIAL_GENERAL_DATE_VARIANT_LIMIT)) {
+    pushQuery(queries, seen, {
+      query: [`site:${source.domain}`, dateClause, "aviation"].filter(Boolean).join(" "),
+      keyword: "date + aviation",
+      topics: [],
+      tier: source.tier,
+      source: source.name,
+      domain: source.domain,
+      date: input.startDate,
+      searchPattern: "site-date-range"
+    });
+
+    for (const keyword of keywords.slice(0, TOPIC_KEYWORD_LIMIT_PER_SOURCE)) {
+      const formattedKeyword = formatSearchTerm(keyword);
       pushQuery(queries, seen, {
-        query: `site:${source.domain} ${dateVariant} aviation`,
-        keyword: "date + aviation",
-        topics: [],
+        query: [`site:${source.domain}`, dateClause, formattedKeyword].filter(Boolean).join(" "),
+        keyword,
+        topics: findTopicsForKeyword(keyword, guide),
         tier: source.tier,
         source: source.name,
         domain: source.domain,
-        date: input.date,
-        searchPattern: "site-date"
-      });
-
-      if (queries.length >= queryLimit) {
-        return queries;
-      }
-    }
-
-    for (const dateVariant of dateVariants.slice(0, DATE_VARIANT_LIMIT_FOR_TOPIC_SEARCH)) {
-      for (const keyword of keywords.slice(0, TOPIC_KEYWORD_LIMIT_PER_SOURCE)) {
-        const formattedKeyword = formatSearchTerm(keyword);
-        pushQuery(queries, seen, {
-          query: `site:${source.domain} ${dateVariant} ${formattedKeyword}`,
-          keyword,
-          topics: findTopicsForKeyword(keyword, guide),
-          tier: source.tier,
-          source: source.name,
-          domain: source.domain,
-          date: input.date,
-          searchPattern: "site-date-topic"
-        });
-
-        if (queries.length >= queryLimit) {
-          return queries;
-        }
-      }
-    }
-
-    for (const dateVariant of dateVariants.slice(INITIAL_GENERAL_DATE_VARIANT_LIMIT, GENERAL_DATE_VARIANT_LIMIT)) {
-      pushQuery(queries, seen, {
-        query: `site:${source.domain} ${dateVariant} aviation`,
-        keyword: "date + aviation",
-        topics: [],
-        tier: source.tier,
-        source: source.name,
-        domain: source.domain,
-        date: input.date,
-        searchPattern: "site-date"
+        date: input.startDate,
+        searchPattern: "site-date-topic"
       });
 
       if (queries.length >= queryLimit) {

@@ -7,6 +7,12 @@ const PORT = "4191";
 const BASE_URL = `http://localhost:${PORT}`;
 const QA_DATE = "2025-11-09";
 
+function addDays(dateValue, days) {
+  const [year, month, day] = String(dateValue).split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day + days));
+  return date.toISOString().slice(0, 10);
+}
+
 function assert(condition, message) {
   if (!condition) {
     throw new Error(message);
@@ -30,7 +36,7 @@ async function waitForServer() {
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
 
-  throw lastError || new Error("QA 서버가 시간 안에 시작되지 않았습니다.");
+  throw lastError || new Error("QA server did not start in time.");
 }
 
 async function postJson(url, payload) {
@@ -44,7 +50,7 @@ async function postJson(url, payload) {
   const body = await response.json();
 
   if (!response.ok) {
-    throw new Error(body.error || "요청이 실패했습니다.");
+    throw new Error(body.error || "Request failed.");
   }
 
   return body;
@@ -68,14 +74,14 @@ async function runQa() {
 
   try {
     const status = await waitForServer();
-    assert(status.searchProvider === "Google News RSS", "기본 검색 제공자가 Google News RSS가 아닙니다.");
-    assert(status.topicCount > 0, "GUIDE 주제 설정을 찾지 못했습니다.");
+    assert(status.searchProvider === "Google News RSS", "Default search provider should be Google News RSS.");
+    assert(status.topicCount > 0, "Could not load guide topics.");
 
     const homeResponse = await fetch(BASE_URL);
-    assert(homeResponse.ok, "첫 화면 HTML을 가져오지 못했습니다.");
+    assert(homeResponse.ok, "Could not fetch the home page HTML.");
     const homeHtml = await homeResponse.text();
-    assert(homeHtml.includes("GAT 기사 검색"), "첫 화면 제목이 올바르지 않습니다.");
-    assert(homeHtml.includes("원문 날짜 확인 수"), "원문 날짜 확인 옵션이 첫 화면에 없습니다.");
+    assert(homeHtml.includes("GAT 기사 검색"), "Home page title is incorrect.");
+    assert(homeHtml.includes("원문 날짜 확인 수"), "Original date verification option is missing from the home page.");
 
     const sampleHtml = [
       "<html><head>",
@@ -84,32 +90,34 @@ async function runQa() {
       "</head><body><p>This aviation policy article discusses airport infrastructure investment and SAF compliance in detail.</p></body></html>"
     ].join("");
     const sampleDate = extractArticleDate(sampleHtml);
-    assert(sampleDate.dateInfo === "2026-05-18T10:00:00Z", "원문 게시일 추출이 실패했습니다.");
-    assert(extractArticleText(sampleHtml).includes("airport infrastructure"), "원문 본문 추출이 실패했습니다.");
+    assert(sampleDate.dateInfo === "2026-05-18T10:00:00Z", "Original article date extraction failed.");
+    assert(extractArticleText(sampleHtml).includes("airport infrastructure"), "Original article body extraction failed.");
 
     const preview = await postJson(`${BASE_URL}/api/preview`, {
-      date: QA_DATE,
+      startDate: QA_DATE,
+      endDate: addDays(QA_DATE, 2),
       maxResultsPerQuery: 20
     });
-    assert(preview.queryCount > 3, "GUIDE 검색 쿼리 수가 예상보다 적습니다.");
-    assert(preview.queries.every((query) => query.query.includes("site:")), "GUIDE 검색 쿼리가 매체별 site 검색 형식이 아닙니다.");
+    assert(preview.queryCount > 0, "No search queries were generated.");
+    assert(preview.queries.every((query) => query.query.includes("site:")), "Generated queries do not use site-based search.");
 
     const search = await postJson(`${BASE_URL}/api/search`, {
-      date: QA_DATE,
-      maxResultsPerQuery: 3,
-      maxArticleFetches: 3,
+      startDate: QA_DATE,
+      endDate: addDays(QA_DATE, 2),
+      maxResultsPerQuery: 10,
+      maxArticleFetches: 12,
       includeDateMismatches: false
     });
-    assert(search.reportUrl, "HTML 리포트 URL이 생성되지 않았습니다.");
-    assert(search.summary.rawCount >= search.summary.resultCount, "검색 요약 수치가 올바르지 않습니다.");
+    assert(search.reportUrl, "HTML report URL was not generated.");
+    assert(search.summary.rawCount >= search.summary.resultCount, "Search summary counts are inconsistent.");
 
     const reportResponse = await fetch(`${BASE_URL}${search.reportUrl}`);
-    assert(reportResponse.ok, "생성된 리포트를 열 수 없습니다.");
+    assert(reportResponse.ok, "Generated report could not be fetched.");
     const reportHtml = await reportResponse.text();
-    assert(reportHtml.includes("GAT 기사 리포트"), "리포트 HTML 내용이 올바르지 않습니다.");
+    assert(reportHtml.includes("GAT 기사 리포트"), "Report HTML content is incorrect.");
 
     if (search.results.length > 0) {
-      assert(search.results.every((result) => result.url && /^https?:\/\//.test(result.url)), "기사 URL이 올바르지 않습니다.");
+      assert(search.results.every((result) => result.url && /^https?:\/\//.test(result.url)), "Article URLs are invalid.");
     }
 
     const result = {

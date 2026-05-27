@@ -31,10 +31,19 @@
         </div>
 
         <form id="searchForm" class="search-form">
-          <label class="field">
+          <div class="field field-wide">
             <span>날짜</span>
-            <input id="dateInput" name="date" type="date" required>
-          </label>
+            <div class="date-range">
+              <label class="date-range-item">
+                <span>시작일</span>
+                <input id="startDateInput" name="startDate" type="date" required>
+              </label>
+              <label class="date-range-item">
+                <span>종료일</span>
+                <input id="endDateInput" name="endDate" type="date" required>
+              </label>
+            </div>
+          </div>
 
           <div class="guide-summary field-wide" aria-label="고정 검색 기준">
             <span>검색 기준</span>
@@ -44,12 +53,12 @@
 
           <label class="field">
             <span>쿼리당 결과 수</span>
-            <input id="maxResultsInput" name="maxResultsPerQuery" type="number" min="1" max="250" value="75">
+            <input id="maxResultsInput" name="maxResultsPerQuery" type="number" min="1" max="250" value="10">
           </label>
 
           <label class="field">
             <span>원문 날짜 확인 수</span>
-            <input id="maxArticleFetchesInput" name="maxArticleFetches" type="number" min="0" max="100" value="60">
+            <input id="maxArticleFetchesInput" name="maxArticleFetches" type="number" min="0" max="100" value="24">
           </label>
 
           <fieldset class="tier-field">

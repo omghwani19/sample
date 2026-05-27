@@ -219,6 +219,26 @@ async function readLimitedText(response) {
   return new TextDecoder("utf-8", { fatal: false }).decode(Buffer.concat(chunks));
 }
 
+async function mapWithConcurrency(items, limit, mapper) {
+  const queue = items.map((value, index) => ({ value, index }));
+  const results = new Array(items.length);
+  const workerCount = Math.max(1, limit);
+
+  async function worker() {
+    while (queue.length > 0) {
+      const next = queue.shift();
+      if (!next) {
+        return;
+      }
+
+      results[next.index] = await mapper(next.value, next.index);
+    }
+  }
+
+  await Promise.all(Array.from({ length: workerCount }, () => worker()));
+  return results;
+}
+
 async function fetchArticleMetadata(url) {
   if (!isFetchableUrl(url)) {
       return {
@@ -295,21 +315,19 @@ async function fetchArticleMetadata(url) {
 
 async function enrichArticleMetadata(results, options = {}) {
   const fetchLimit = Math.max(0, Math.min(DEFAULT_FETCH_LIMIT, Number(options.fetchLimit || DEFAULT_FETCH_LIMIT)));
-  const enriched = [];
   let verifiedCount = 0;
   let failedCount = 0;
   let skippedCount = 0;
 
-  for (const [index, result] of results.entries()) {
+  const enriched = await mapWithConcurrency(results, 4, async (result, index) => {
     if (index >= fetchLimit) {
       skippedCount += 1;
-      enriched.push({
+      return {
         ...result,
         articleDateVerificationStatus: "not-fetched",
         articleDateVerificationSource: "",
         articleDateVerificationError: "원문 확인 상한 초과"
-      });
-      continue;
+      };
     }
 
     const metadata = await fetchArticleMetadata(result.url);
@@ -321,7 +339,7 @@ async function enrichArticleMetadata(results, options = {}) {
       failedCount += 1;
     }
 
-    enriched.push({
+    return {
       ...result,
       dateInfo: metadata.dateInfo || result.dateInfo,
       articleDateInfo: metadata.dateInfo || "",
@@ -329,8 +347,8 @@ async function enrichArticleMetadata(results, options = {}) {
       articleDateVerificationStatus: metadata.status,
       articleDateVerificationSource: metadata.source,
       articleDateVerificationError: metadata.error
-    });
-  }
+    };
+  });
 
   return {
     results: enriched,

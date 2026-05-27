@@ -113,6 +113,26 @@ function buildBatchBody({ articleId, signature, timestamp }) {
   return new URLSearchParams({ "f.req": JSON.stringify(batchPayload) });
 }
 
+async function mapWithConcurrency(items, limit, mapper) {
+  const queue = items.map((value, index) => ({ value, index }));
+  const results = new Array(items.length);
+  const workerCount = Math.max(1, limit);
+
+  async function worker() {
+    while (queue.length > 0) {
+      const next = queue.shift();
+      if (!next) {
+        return;
+      }
+
+      results[next.index] = await mapper(next.value, next.index);
+    }
+  }
+
+  await Promise.all(Array.from({ length: workerCount }, () => worker()));
+  return results;
+}
+
 async function resolveWithBatch(sourceUrl, pageHtml) {
   const articleId = extractArticleId(sourceUrl);
   const signature = extractAttribute(pageHtml, "data-n-a-sg");
@@ -168,10 +188,8 @@ async function resolveGoogleNewsUrl(sourceUrl) {
 }
 
 async function resolveArticleUrls(results) {
-  const resolvedResults = [];
   let resolvedCount = 0;
-
-  for (const result of results) {
+  const resolvedResults = await mapWithConcurrency(results, 6, async (result) => {
     try {
       const resolution = await resolveGoogleNewsUrl(result.url);
       const isResolved = resolution.resolved && resolution.url !== result.url;
@@ -179,23 +197,23 @@ async function resolveArticleUrls(results) {
         resolvedCount += 1;
       }
 
-      resolvedResults.push({
+      return {
         ...result,
         url: resolution.url,
         googleNewsUrl: isResolved ? result.url : "",
         urlResolutionMethod: resolution.method,
         urlResolutionStatus: isResolved ? "원문 URL 확인" : "직접 URL"
-      });
+      };
     } catch (error) {
-      resolvedResults.push({
+      return {
         ...result,
         googleNewsUrl: "",
         urlResolutionMethod: "failed",
         urlResolutionStatus: "URL 확인 실패",
         urlResolutionError: error.message
-      });
+      };
     }
-  }
+  });
 
   return {
     results: resolvedResults,

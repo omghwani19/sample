@@ -90,6 +90,26 @@ function dedupeSearchResults(results) {
   return [...byUrl.values()];
 }
 
+async function mapWithConcurrency(items, limit, mapper) {
+  const queue = items.map((value, index) => ({ value, index }));
+  const results = new Array(items.length);
+  const workerCount = Math.max(1, limit);
+
+  async function worker() {
+    while (queue.length > 0) {
+      const next = queue.shift();
+      if (!next) {
+        return;
+      }
+
+      results[next.index] = await mapper(next.value, next.index);
+    }
+  }
+
+  await Promise.all(Array.from({ length: workerCount }, () => worker()));
+  return results;
+}
+
 function selectSearchProvider(runtimeConfig) {
   if (runtimeConfig.searchProvider === "google-cse") {
     return {
@@ -227,28 +247,37 @@ async function handleSearch(request, response) {
     return;
   }
 
-  const rawResults = [];
-  for (const query of queries) {
+  const searchResults = await mapWithConcurrency(queries, 6, async (query) => {
     try {
       const items = await searchProvider.search({
         query,
-        date: input.date,
+        startDate: input.startDate,
+        endDate: input.endDate,
         maxResults: input.maxResultsPerQuery
       });
-
-      for (const item of items) {
-        rawResults.push({
-          ...item,
-          keyword: item.keyword || query.keyword,
-          tier: item.tier || query.tier,
-          topics: item.topics || query.topics,
-          queryUsed: query.query
-        });
-      }
+      return { query, items, error: null };
     } catch (error) {
+      return { query, items: [], error: error.message };
+    }
+  });
+
+  const rawResults = [];
+  for (const resultSet of searchResults) {
+    if (resultSet.error) {
       warnings.push({
-        query: query.query,
-        message: error.message
+        query: resultSet.query.query,
+        message: resultSet.error
+      });
+      continue;
+    }
+
+    for (const item of resultSet.items) {
+      rawResults.push({
+        ...item,
+        keyword: item.keyword || resultSet.query.keyword,
+        tier: item.tier || resultSet.query.tier,
+        topics: item.topics || resultSet.query.topics,
+        queryUsed: resultSet.query.query
       });
     }
   }

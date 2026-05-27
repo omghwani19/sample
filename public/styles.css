@@ -135,6 +135,10 @@ main {
   min-width: 0;
 }
 
+.field-wide {
+  grid-column: 1 / -1;
+}
+
 .field span,
 .guide-summary span,
 .tier-field legend {
@@ -161,6 +165,24 @@ main {
   margin: 0;
   color: var(--color-body);
   font-size: 14px;
+}
+
+.date-range {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.date-range-item {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.date-range-item span {
+  color: var(--color-ink-soft);
+  font-size: 14px;
+  font-weight: 700;
 }
 
 .field input,

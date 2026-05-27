@@ -10,8 +10,18 @@ function addDays(dateValue, days) {
   return date.toISOString().slice(0, 10);
 }
 
-function buildGoogleQuery(query, date) {
-  return `${query.query} after:${date} before:${addDays(date, 1)}`;
+function buildGoogleQuery(query, startDate, endDate) {
+  if (/\bafter:/i.test(query.query) || /\bbefore:/i.test(query.query)) {
+    return query.query;
+  }
+
+  const normalizedStart = String(startDate || "").trim();
+  const normalizedEnd = String(endDate || normalizedStart).trim();
+  if (!normalizedStart) {
+    return query.query;
+  }
+
+  return `${query.query} after:${normalizedStart} before:${addDays(normalizedEnd || normalizedStart, 1)}`;
 }
 
 function extractMetaDate(item) {
@@ -60,7 +70,7 @@ function normalizeItem(item, query) {
   };
 }
 
-async function searchGoogleCse({ runtimeConfig, query, date, maxResults }) {
+async function searchGoogleCse({ runtimeConfig, query, startDate, endDate, maxResults }) {
   if (!runtimeConfig.googleApiKey || !runtimeConfig.googleCseId) {
     throw new Error("Google API 설정이 필요합니다. .env에 GOOGLE_API_KEY와 GOOGLE_CSE_ID를 입력하세요.");
   }
@@ -73,7 +83,7 @@ async function searchGoogleCse({ runtimeConfig, query, date, maxResults }) {
     const url = new URL(GOOGLE_CSE_ENDPOINT);
     url.searchParams.set("key", runtimeConfig.googleApiKey);
     url.searchParams.set("cx", runtimeConfig.googleCseId);
-    url.searchParams.set("q", buildGoogleQuery(query, date));
+    url.searchParams.set("q", buildGoogleQuery(query, startDate, endDate));
     url.searchParams.set("num", String(pageSize));
     url.searchParams.set("start", String(start));
     url.searchParams.set("hl", "en");

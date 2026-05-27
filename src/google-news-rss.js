@@ -51,8 +51,18 @@ function addDays(dateValue, days) {
   return date.toISOString().slice(0, 10);
 }
 
-function buildRssQuery(query, date) {
-  return `${query.query} after:${date} before:${addDays(date, 1)}`;
+function buildRssQuery(query, startDate, endDate) {
+  if (/\bafter:/i.test(query.query) || /\bbefore:/i.test(query.query)) {
+    return query.query;
+  }
+
+  const normalizedStart = String(startDate || "").trim();
+  const normalizedEnd = String(endDate || normalizedStart).trim();
+  if (!normalizedStart) {
+    return query.query;
+  }
+
+  return `${query.query} after:${normalizedStart} before:${addDays(normalizedEnd || normalizedStart, 1)}`;
 }
 
 function cleanTitle(title, sourceName) {
@@ -94,9 +104,9 @@ function parseItems(xml, query) {
   return items;
 }
 
-async function searchGoogleNewsRss({ query, date, maxResults }) {
+async function searchGoogleNewsRss({ query, startDate, endDate, maxResults }) {
   const url = new URL(GOOGLE_NEWS_RSS_ENDPOINT);
-  url.searchParams.set("q", buildRssQuery(query, date));
+  url.searchParams.set("q", buildRssQuery(query, startDate, endDate));
   url.searchParams.set("hl", "en-US");
   url.searchParams.set("gl", "US");
   url.searchParams.set("ceid", "US:en");

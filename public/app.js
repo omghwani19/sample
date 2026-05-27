@@ -11,7 +11,8 @@ const elements = {
   latestReportLink: document.querySelector("#latestReportLink"),
   runState: document.querySelector("#runState"),
   searchForm: document.querySelector("#searchForm"),
-  dateInput: document.querySelector("#dateInput"),
+  startDateInput: document.querySelector("#startDateInput"),
+  endDateInput: document.querySelector("#endDateInput"),
   maxResultsInput: document.querySelector("#maxResultsInput"),
   maxArticleFetchesInput: document.querySelector("#maxArticleFetchesInput"),
   includeDateMismatchesInput: document.querySelector("#includeDateMismatchesInput"),
@@ -46,6 +47,16 @@ function getKoreanToday() {
   return `${byType.year}-${byType.month}-${byType.day}`;
 }
 
+function addDays(dateValue, days) {
+  const [year, month, day] = String(dateValue || "").split("-").map(Number);
+  if (!year || !month || !day) {
+    return "";
+  }
+
+  const date = new Date(Date.UTC(year, month - 1, day + days));
+  return date.toISOString().slice(0, 10);
+}
+
 function setBadge(element, text, mode = "muted") {
   element.textContent = text;
   element.className = `status-badge ${mode}`;
@@ -60,11 +71,14 @@ function selectedTiers() {
 }
 
 function getSearchPayload() {
+  const startDate = elements.startDateInput.value;
+  const endDate = elements.endDateInput.value || startDate;
   return {
-    date: elements.dateInput.value,
+    startDate,
+    endDate,
     tierScope: selectedTiers(),
     maxResultsPerQuery: Number(elements.maxResultsInput.value || 5),
-    maxArticleFetches: Number(elements.maxArticleFetchesInput.value || 60),
+    maxArticleFetches: Number(elements.maxArticleFetchesInput.value || 24),
     includeDateMismatches: elements.includeDateMismatchesInput.checked
   };
 }
@@ -222,6 +236,20 @@ function renderResults(results) {
   `).join("");
 }
 
+function normalizeDateRange() {
+  const startDate = elements.startDateInput.value || getKoreanToday();
+  const endDate = elements.endDateInput.value || startDate;
+  if (!elements.startDateInput.value) {
+    elements.startDateInput.value = startDate;
+  }
+  if (!elements.endDateInput.value) {
+    elements.endDateInput.value = endDate;
+  }
+  if (endDate < startDate) {
+    elements.endDateInput.value = startDate;
+  }
+}
+
 async function loadStatus() {
   try {
     const status = await fetchJson("/api/status");
@@ -235,7 +263,7 @@ async function loadStatus() {
 async function previewQueries() {
   const payload = getSearchPayload();
 
-  if (!payload.date) {
+  if (!payload.startDate) {
     renderQueryPreview({ queryCount: 0, queries: [] });
     return;
   }
@@ -302,7 +330,6 @@ function bindEvents() {
 
   elements.previewButton.addEventListener("click", previewQueries);
   elements.searchForm.addEventListener("submit", runSearch);
-  elements.dateInput.addEventListener("change", debouncedPreview);
   elements.maxResultsInput.addEventListener("change", debouncedPreview);
   elements.maxArticleFetchesInput.addEventListener("change", debouncedPreview);
   elements.includeDateMismatchesInput.addEventListener("change", debouncedPreview);
@@ -310,10 +337,22 @@ function bindEvents() {
   for (const input of document.querySelectorAll("input[name='tierScope']")) {
     input.addEventListener("change", debouncedPreview);
   }
+
+  elements.startDateInput.addEventListener("change", () => {
+    normalizeDateRange();
+    debouncedPreview();
+  });
+  elements.endDateInput.addEventListener("change", () => {
+    normalizeDateRange();
+    debouncedPreview();
+  });
 }
 
 async function init() {
-  elements.dateInput.value = getKoreanToday();
+  const today = getKoreanToday();
+  elements.startDateInput.value = today;
+  elements.endDateInput.value = today;
+  normalizeDateRange();
   bindEvents();
   await loadStatus();
 }
